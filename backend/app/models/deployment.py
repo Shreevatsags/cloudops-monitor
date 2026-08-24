@@ -7,7 +7,11 @@ from app.database import Base
 class Deployment(Base):
     __tablename__ = "deployments"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     application_id = Column(
         Integer,
@@ -15,7 +19,10 @@ class Deployment(Base):
         nullable=False
     )
 
-    version = Column(String(100), nullable=False)
+    version = Column(
+        String(100),
+        nullable=False
+    )
 
     status = Column(
         String(50),

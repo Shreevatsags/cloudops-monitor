@@ -7,7 +7,11 @@ from app.database import Base
 class DeploymentLog(Base):
     __tablename__ = "deployment_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     deployment_id = Column(
         Integer,
@@ -15,7 +19,10 @@ class DeploymentLog(Base):
         nullable=False
     )
 
-    message = Column(String(1000), nullable=False)
+    message = Column(
+        String(1000),
+        nullable=False
+    )
 
     timestamp = Column(
         DateTime(timezone=True),

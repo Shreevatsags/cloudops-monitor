@@ -1,11 +1,25 @@
 from fastapi import FastAPI
 
-from app.database import engine, Base
-from app.routes.applications import router as applications_router
-from app.routes.deployments import router as deployments_router
+from app.database import Base, engine
 
 # Import models so SQLAlchemy knows about them
-from app.models import User, Application, Deployment, DeploymentLog
+from app.models import (
+    User,
+    Application,
+    Deployment,
+    DeploymentLog
+)
+
+from app.routes.auth import router as auth_router
+from app.routes.applications import (
+    router as applications_router
+)
+
+
+# Create database tables
+Base.metadata.create_all(
+    bind=engine
+)
 
 
 app = FastAPI(
@@ -15,12 +29,18 @@ app = FastAPI(
 )
 
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+app.include_router(
+    auth_router
+)
+
+app.include_router(
+    applications_router
+)
 
 
 @app.get("/")
 def root():
+
     return {
         "message": "CloudOps Monitor API is running"
     }
@@ -28,11 +48,7 @@ def root():
 
 @app.get("/health")
 def health_check():
+
     return {
         "status": "healthy"
     }
-
-
-# Register API routes
-app.include_router(applications_router)
-app.include_router(deployments_router)
