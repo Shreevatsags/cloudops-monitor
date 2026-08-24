@@ -1,8 +1,8 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
 
-# Import models so SQLAlchemy knows about them
 from app.models import (
     User,
     Application,
@@ -17,9 +17,7 @@ from app.routes.applications import (
 
 
 # Create database tables
-Base.metadata.create_all(
-    bind=engine
-)
+Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI(
@@ -29,18 +27,36 @@ app = FastAPI(
 )
 
 
-app.include_router(
-    auth_router
+# --------------------------------------------------
+# CORS Configuration
+# --------------------------------------------------
+
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-app.include_router(
-    applications_router
-)
+
+# --------------------------------------------------
+# Routes
+# --------------------------------------------------
+
+app.include_router(auth_router)
+
+app.include_router(applications_router)
 
 
 @app.get("/")
 def root():
-
     return {
         "message": "CloudOps Monitor API is running"
     }
@@ -48,7 +64,6 @@ def root():
 
 @app.get("/health")
 def health_check():
-
     return {
         "status": "healthy"
     }
