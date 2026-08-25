@@ -5,10 +5,16 @@ import {
   Navigate,
 } from "react-router-dom";
 
+import Applications from "./pages/Applications";
+import CreateApplication from "./pages/CreateApplication";
+import ApplicationDetails from "./pages/ApplicationDetails";
+import Deployments from "./pages/Deployments";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Layout from "./components/Layout";
 
 function App() {
   return (
@@ -18,9 +24,7 @@ function App() {
 
         <Route
           path="/"
-          element={
-            <Navigate to="/login" />
-          }
+          element={<Navigate to="/login" />}
         />
 
         <Route
@@ -37,12 +41,59 @@ function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Layout>
+                <Dashboard />
+              </Layout>
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/applications"
+  element={
+    <ProtectedRoute>
+      <Layout>
+        <Applications />
+      </Layout>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/applications/new"
+  element={
+    <ProtectedRoute>
+      <Layout>
+        <CreateApplication />
+      </Layout>
+    </ProtectedRoute>
+  }
+/>
+      
+      <Route
+  path="/applications/:id"
+  element={
+    <ProtectedRoute>
+      <Layout>
+        <ApplicationDetails />
+      </Layout>
+    </ProtectedRoute>
+  }
+/>    
+      <Route
+  path="/deployments"
+  element={
+    <ProtectedRoute>
+      <Layout>
+        <Deployments />
+      </Layout>
+    </ProtectedRoute>
+  }
+/>
 
       </Routes>
+
+      
+      
 
     </BrowserRouter>
   );

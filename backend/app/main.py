@@ -10,6 +10,10 @@ from app.models import (
     DeploymentLog
 )
 
+from app.routes.deployments import (
+    router as deployments_router
+)
+
 from app.routes.auth import router as auth_router
 from app.routes.applications import (
     router as applications_router
@@ -26,6 +30,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.include_router(
+    deployments_router
+)
 
 # --------------------------------------------------
 # CORS Configuration
