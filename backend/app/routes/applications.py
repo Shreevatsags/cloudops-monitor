@@ -9,12 +9,18 @@ from app.schemas.application import (
     ApplicationResponse
 )
 from app.utils.security import get_current_user
-
+from app.services.docker_service import build_docker_image
+from app.services.git_service import clone_repository
 
 router = APIRouter(
     prefix="/applications",
     tags=["Applications"]
 )
+
+
+# ============================================================
+# GET SINGLE APPLICATION
+# ============================================================
 
 @router.get(
     "/{application_id}",
@@ -36,13 +42,17 @@ def get_application(
     )
 
     if application is None:
-
         raise HTTPException(
             status_code=404,
             detail="Application not found"
         )
 
     return application
+
+
+# ============================================================
+# GET ALL APPLICATIONS
+# ============================================================
 
 @router.get(
     "/",
@@ -63,6 +73,10 @@ def get_applications(
 
     return applications
 
+
+# ============================================================
+# CREATE APPLICATION
+# ============================================================
 
 @router.post(
     "/",
@@ -88,3 +102,83 @@ def create_application(
     db.refresh(new_application)
 
     return new_application
+
+
+# ============================================================
+# BUILD DOCKER IMAGE
+# ============================================================
+
+@router.post("/{application_id}/build")
+def build_application(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+
+    application = (
+        db.query(Application)
+        .filter(
+            Application.id == application_id,
+            Application.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Application not found"
+        )
+
+    repository_path = None
+
+    image_name = f"cloudops-app:{application.id}"
+
+    try:
+
+        # 1. Clone GitHub repository
+        repository_path = clone_repository(
+            application.repository_url
+        )
+
+        # 2. Build Docker image
+        result = build_docker_image(
+            project_path=repository_path,
+            image_name=image_name
+        )
+
+        # 3. Save Docker image name
+        application.docker_image = image_name
+        application.status = "built"
+
+        db.commit()
+        db.refresh(application)
+
+        return {
+            "message": "Docker image built successfully",
+            "image": image_name,
+            "output": result["output"]
+        }
+
+    except Exception as error:
+
+        application.status = "build_failed"
+
+        db.commit()
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
+
+    finally:
+
+        # 4. Remove temporary repository
+        if repository_path:
+
+            import shutil
+
+            shutil.rmtree(
+                repository_path,
+                ignore_errors=True
+            )
