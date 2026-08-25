@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.application import Application
 from app.models.deployment import Deployment
+from app.models.deployment_log import DeploymentLog
 from app.models.user import User
 from app.utils.security import get_current_user
-from app.models.deployment_log import DeploymentLog
 
 router = APIRouter(
     prefix="/deployments",
@@ -61,8 +61,10 @@ def get_deployment_logs(
     logs = (
         db.query(DeploymentLog)
         .filter(
-            DeploymentLog.deployment_id
-            == deployment.id
+            DeploymentLog.deployment_id == deployment.id
+        )
+        .order_by(
+            DeploymentLog.timestamp.asc()
         )
         .all()
     )
@@ -100,12 +102,24 @@ def create_deployment(
     db.commit()
     db.refresh(deployment)
 
-    log = DeploymentLog(
-        deployment_id=deployment.id,
-        message="Deployment started"
+    logs = [
+        "Deployment started",
+        "Preparing deployment",
+        "Building application",
+        "Deployment completed"
+    ]
+
+    for message in logs:
+        log = DeploymentLog(
+            deployment_id=deployment.id,
+            message=message
         )
 
-    db.add(log)
+        db.add(log)
+
+    deployment.status = "success"
+
     db.commit()
+    db.refresh(deployment)
 
     return deployment

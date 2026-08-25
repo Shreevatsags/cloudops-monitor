@@ -9,6 +9,7 @@ import Applications from "./pages/Applications";
 import CreateApplication from "./pages/CreateApplication";
 import ApplicationDetails from "./pages/ApplicationDetails";
 import Deployments from "./pages/Deployments";
+import DeploymentDetails from "./pages/DeploymentDetails";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -85,6 +86,16 @@ function App() {
     <ProtectedRoute>
       <Layout>
         <Deployments />
+      </Layout>
+    </ProtectedRoute>
+  }
+/>
+     <Route
+  path="/deployments/:id"
+  element={
+    <ProtectedRoute>
+      <Layout>
+        <DeploymentDetails />
       </Layout>
     </ProtectedRoute>
   }
