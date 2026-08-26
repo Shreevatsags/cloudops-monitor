@@ -55,37 +55,63 @@ function ApplicationDetails() {
 
   }, [id]);
 
+  // Build application
+ const handleBuild = async () => {
+
+  try {
+
+    await api.post(
+      `/applications/${id}/build`
+    );
+
+    alert("Docker image built successfully!");
+
+    window.location.reload();
+
+  } catch (error) {
+
+    console.error(
+      "Build failed:",
+      error
+    );
+
+    alert(
+      error.response?.data?.detail ||
+      "Build failed"
+    );
+  }
+};
 
   // Deploy application
   const handleDeploy = async () => {
 
-    setDeploying(true);
+  setDeploying(true);
 
-    try {
+  try {
 
-      await api.post(
-        `/deployments/${id}`
-      );
+    await api.post(
+      `/deployments/${id}`
+    );
 
-      alert("Deployment created successfully!");
+    alert("Deployment created successfully!");
 
-      navigate("/deployments");
+    navigate("/deployments");
 
-    } catch (error) {
+  } catch (error) {
 
-      console.error(
-        "Deployment failed:",
-        error
-      );
+    console.error(
+      "Deployment failed:",
+      error
+    );
 
-      alert("Deployment failed.");
+    alert("Deployment failed.");
 
-    } finally {
+  } finally {
 
-      setDeploying(false);
+    setDeploying(false);
 
-    }
-  };
+  }
+};
 
 
   // Loading state
@@ -212,6 +238,7 @@ function ApplicationDetails() {
             {application.docker_image ||
               "Not built yet"}
           </p>
+        
 
         </div>
 
@@ -220,17 +247,28 @@ function ApplicationDetails() {
 
         <div className="border-t pt-6">
 
-          <button
-            onClick={handleDeploy}
-            disabled={deploying}
-            className="bg-slate-900 text-white px-6 py-3 rounded-lg hover:bg-slate-800 disabled:opacity-50"
-          >
+          {application.status !== "built" ? (
 
-            {deploying
-              ? "Creating Deployment..."
-              : "Deploy Application"}
+    <button
+      onClick={handleBuild}
+      className="bg-slate-900 text-white px-6 py-3 rounded-lg hover:bg-slate-800"
+   >
+      Build Application
+    </button>
 
-          </button>
+  ) : (
+
+    <button
+      onClick={handleDeploy}
+      disabled={deploying}
+      className="bg-slate-900 text-white px-6 py-3 rounded-lg hover:bg-slate-800 disabled:opacity-50"
+    >
+      {deploying
+        ? "Creating Deployment..."
+        : "Deploy Application"}
+    </button>
+
+    )}
 
         </div>
 
