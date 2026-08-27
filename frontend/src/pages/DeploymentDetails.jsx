@@ -11,6 +11,80 @@ function DeploymentDetails() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const handleStop = async () => {
+
+  setActionLoading(true);
+
+  try {
+
+    const response = await api.post(
+      `/deployments/${id}/stop`
+    );
+
+    setDeployment((prev) => ({
+      ...prev,
+      status: response.data.status
+    }));
+
+    alert("Deployment stopped successfully.");
+
+  } catch (error) {
+
+    console.error(
+      "Failed to stop deployment:",
+      error
+    );
+
+    alert(
+      error.response?.data?.detail ||
+      "Failed to stop deployment."
+    );
+
+  } finally {
+
+    setActionLoading(false);
+
+  }
+};
+
+
+    const handleRestart = async () => {
+
+      setActionLoading(true);
+
+    try {
+
+    const response = await api.post(
+      `/deployments/${id}/restart`
+    );
+
+    setDeployment((prev) => ({
+      ...prev,
+      status: response.data.status
+    }));
+
+    alert("Deployment restarted successfully.");
+
+  } catch (error) {
+
+    console.error(
+      "Failed to restart deployment:",
+      error
+    );
+
+    alert(
+      error.response?.data?.detail ||
+      "Failed to restart deployment."
+    );
+
+  } finally {
+
+    setActionLoading(false);
+
+  }
+};
 
   useEffect(() => {
 
@@ -197,6 +271,36 @@ function DeploymentDetails() {
             </span>
 
           </div>
+          <div className="flex gap-3 mt-6">
+
+  <button
+    onClick={handleStop}
+    disabled={
+      actionLoading ||
+      deployment.status === "stopped"
+    }
+    className="bg-red-600 text-white px-5 py-3 rounded-lg hover:bg-red-700 disabled:opacity-50"
+  >
+    {actionLoading
+      ? "Processing..."
+      : "Stop Deployment"}
+  </button>
+
+
+  <button
+    onClick={handleRestart}
+    disabled={
+      actionLoading ||
+      deployment.status === "success"
+    }
+    className="bg-green-600 text-white px-5 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50"
+  >
+    {actionLoading
+      ? "Processing..."
+      : "Restart Deployment"}
+  </button>
+
+</div>
 
 
           {/* Container */}
