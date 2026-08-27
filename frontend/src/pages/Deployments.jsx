@@ -107,6 +107,20 @@ function Deployments() {
                     {deployment.version}
                   </p>
 
+                  {deployment.container_name && (
+                  <p className="text-sm text-slate-500 mt-1">
+                    Container:{" "}
+                    {deployment.container_name}
+                  </p>
+                  )}
+
+                  {deployment.host_port && (
+                  <p className="text-sm text-slate-500 mt-1">
+                    Port:{" "}
+                    {deployment.host_port}
+                  </p>
+                  )}
+
                   {deployment.started_at && (
                     <p className="text-sm text-slate-400 mt-1">
                       Started:{" "}

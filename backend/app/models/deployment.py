@@ -5,12 +5,14 @@ from sqlalchemy import (
     DateTime,
     ForeignKey
 )
+
 from sqlalchemy.sql import func
 
 from app.database import Base
 
 
 class Deployment(Base):
+
     __tablename__ = "deployments"
 
     id = Column(
@@ -34,6 +36,21 @@ class Deployment(Base):
         String(50),
         default="pending",
         nullable=False
+    )
+
+    container_id = Column(
+        String(255),
+        nullable=True
+    )
+
+    container_name = Column(
+        String(255),
+        nullable=True
+    )
+
+    host_port = Column(
+        Integer,
+        nullable=True
     )
 
     started_at = Column(

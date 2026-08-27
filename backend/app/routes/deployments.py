@@ -8,6 +8,10 @@ from app.models.deployment_log import DeploymentLog
 from app.models.user import User
 from app.utils.security import get_current_user
 from app.services.docker_service import deploy_docker_container
+from app.services.docker_service import (
+    stop_docker_container,
+    start_docker_container
+)
 
 router = APIRouter(
     prefix="/deployments",
@@ -149,6 +153,9 @@ def create_deployment(
         )
 
         container_id = result["container_id"]
+        deployment.container_id = container_id
+        deployment.container_name = container_name
+        deployment.host_port = host_port
 
         # 7. Save deployment logs
         db.add(
@@ -201,6 +208,120 @@ def create_deployment(
         )
 
         db.commit()
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
+
+@router.post("/{deployment_id}/stop")
+def stop_deployment(
+    deployment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+
+    deployment = (
+        db.query(Deployment)
+        .join(
+            Application,
+            Deployment.application_id == Application.id
+        )
+        .filter(
+            Deployment.id == deployment_id,
+            Application.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if deployment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Deployment not found"
+        )
+
+    if not deployment.container_name:
+        raise HTTPException(
+            status_code=400,
+            detail="Container information not available"
+        )
+
+    try:
+
+        result = stop_docker_container(
+            deployment.container_name
+        )
+
+        deployment.status = "stopped"
+
+        db.commit()
+        db.refresh(deployment)
+
+        return {
+            "message": "Deployment stopped successfully",
+            "deployment_id": deployment.id,
+            "status": deployment.status,
+            "container_name": deployment.container_name
+        }
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
+
+@router.post("/{deployment_id}/restart")
+def restart_deployment(
+    deployment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+
+    deployment = (
+        db.query(Deployment)
+        .join(
+            Application,
+            Deployment.application_id == Application.id
+        )
+        .filter(
+            Deployment.id == deployment_id,
+            Application.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if deployment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Deployment not found"
+        )
+
+    if not deployment.container_name:
+        raise HTTPException(
+            status_code=400,
+            detail="Container information not available"
+        )
+
+    try:
+
+        result = start_docker_container(
+            deployment.container_name
+        )
+
+        deployment.status = "success"
+
+        db.commit()
+        db.refresh(deployment)
+
+        return {
+            "message": "Deployment restarted successfully",
+            "deployment_id": deployment.id,
+            "status": deployment.status,
+            "container_name": deployment.container_name
+        }
+
+    except Exception as error:
 
         raise HTTPException(
             status_code=500,

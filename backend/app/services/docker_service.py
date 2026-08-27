@@ -81,3 +81,52 @@ def deploy_docker_container(
         "container_id": result.stdout.strip(),
         "output": result.stdout.strip()
     }
+
+def stop_docker_container(container_name: str):
+
+    command = [
+        "docker",
+        "stop",
+        container_name
+    ]
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            result.stderr.strip()
+        )
+
+    return {
+        "message": "Container stopped successfully",
+        "container_name": container_name
+    }
+
+
+def start_docker_container(container_name: str):
+
+    command = [
+        "docker",
+        "start",
+        container_name
+    ]
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            result.stderr.strip()
+        )
+
+    return {
+        "message": "Container started successfully",
+        "container_name": container_name
+    }
