@@ -38,6 +38,44 @@ def get_deployments(
 
     return deployments
 
+@router.get("/{deployment_id}")
+def get_deployment(
+    deployment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+
+    deployment = (
+        db.query(Deployment)
+        .join(
+            Application,
+            Deployment.application_id == Application.id
+        )
+        .filter(
+            Deployment.id == deployment_id,
+            Application.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if deployment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Deployment not found"
+        )
+
+    return {
+        "id": deployment.id,
+        "application_id": deployment.application_id,
+        "version": deployment.version,
+        "status": deployment.status,
+        "container_id": deployment.container_id,
+        "container_name": deployment.container_name,
+        "host_port": deployment.host_port,
+        "started_at": deployment.started_at,
+        "completed_at": deployment.completed_at
+    }
+
 @router.get("/{deployment_id}/logs")
 def get_deployment_logs(
     deployment_id: int,

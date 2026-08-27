@@ -3,7 +3,6 @@ import { useParams, Link } from "react-router-dom";
 import api from "../services/api";
 
 function DeploymentDetails() {
-
   const { id } = useParams();
 
   const [deployment, setDeployment] = useState(null);
@@ -13,113 +12,84 @@ function DeploymentDetails() {
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Stop deployment
   const handleStop = async () => {
-
-  setActionLoading(true);
-
-  try {
-
-    const response = await api.post(
-      `/deployments/${id}/stop`
-    );
-
-    setDeployment((prev) => ({
-      ...prev,
-      status: response.data.status
-    }));
-
-    alert("Deployment stopped successfully.");
-
-  } catch (error) {
-
-    console.error(
-      "Failed to stop deployment:",
-      error
-    );
-
-    alert(
-      error.response?.data?.detail ||
-      "Failed to stop deployment."
-    );
-
-  } finally {
-
-    setActionLoading(false);
-
-  }
-};
-
-
-    const handleRestart = async () => {
-
-      setActionLoading(true);
+    setActionLoading(true);
 
     try {
+      const response = await api.post(
+        `/deployments/${id}/stop`
+      );
 
-    const response = await api.post(
-      `/deployments/${id}/restart`
-    );
+      setDeployment((prev) => ({
+        ...prev,
+        status: response.data.status,
+      }));
 
-    setDeployment((prev) => ({
-      ...prev,
-      status: response.data.status
-    }));
+      alert("Deployment stopped successfully.");
+    } catch (error) {
+      console.error(
+        "Failed to stop deployment:",
+        error
+      );
 
-    alert("Deployment restarted successfully.");
+      alert(
+        error.response?.data?.detail ||
+          "Failed to stop deployment."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
-  } catch (error) {
+  // Restart deployment
+  const handleRestart = async () => {
+    setActionLoading(true);
 
-    console.error(
-      "Failed to restart deployment:",
-      error
-    );
+    try {
+      const response = await api.post(
+        `/deployments/${id}/restart`
+      );
 
-    alert(
-      error.response?.data?.detail ||
-      "Failed to restart deployment."
-    );
+      setDeployment((prev) => ({
+        ...prev,
+        status: response.data.status,
+      }));
 
-  } finally {
+      alert("Deployment restarted successfully.");
+    } catch (error) {
+      console.error(
+        "Failed to restart deployment:",
+        error
+      );
 
-    setActionLoading(false);
+      alert(
+        error.response?.data?.detail ||
+          "Failed to restart deployment."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
-  }
-};
-
+  // Fetch deployment information and logs
   useEffect(() => {
-
     const fetchDeployment = async () => {
-
       try {
+        // Get deployment details
+        const deploymentResponse = await api.get(
+          `/deployments/${id}`
+        );
 
-        // Get all deployments
-        const deploymentResponse =
-          await api.get("/deployments/");
-
-        const currentDeployment =
-          deploymentResponse.data.find(
-            (item) =>
-              item.id === Number(id)
-          );
-
-        if (!currentDeployment) {
-          setError("Deployment not found.");
-          return;
-        }
-
-        setDeployment(currentDeployment);
-
+        setDeployment(deploymentResponse.data);
 
         // Get deployment logs
-        const logsResponse =
-          await api.get(
-            `/deployments/${id}/logs`
-          );
+        const logsResponse = await api.get(
+          `/deployments/${id}/logs`
+        );
 
         setLogs(logsResponse.data);
-
       } catch (error) {
-
         console.error(
           "Failed to fetch deployment:",
           error
@@ -127,24 +97,18 @@ function DeploymentDetails() {
 
         setError(
           error.response?.data?.detail ||
-          "Failed to load deployment."
+            "Failed to load deployment."
         );
-
       } finally {
-
         setLoading(false);
-
       }
-
     };
 
     fetchDeployment();
-
   }, [id]);
 
-
+  // Loading state
   if (loading) {
-
     return (
       <div className="p-8">
         <p className="text-slate-500">
@@ -152,15 +116,12 @@ function DeploymentDetails() {
         </p>
       </div>
     );
-
   }
 
-
+  // Error state
   if (error) {
-
     return (
       <div className="p-8">
-
         <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
           {error}
         </div>
@@ -171,23 +132,27 @@ function DeploymentDetails() {
         >
           ← Back to Deployments
         </Link>
-
       </div>
     );
-
   }
 
+  // Safety check
+  if (!deployment) {
+    return (
+      <div className="p-8">
+        <p className="text-slate-500">
+          Deployment not found.
+        </p>
+      </div>
+    );
+  }
 
   return (
-
     <div>
-
       {/* Header */}
 
       <div className="flex justify-between items-center mb-8">
-
         <div>
-
           <h1 className="text-3xl font-bold text-slate-900">
             Deployment #{deployment.id}
           </h1>
@@ -195,7 +160,6 @@ function DeploymentDetails() {
           <p className="text-slate-500 mt-2">
             Deployment information and logs
           </p>
-
         </div>
 
         <Link
@@ -204,26 +168,19 @@ function DeploymentDetails() {
         >
           Back
         </Link>
-
       </div>
-
 
       {/* Deployment Information */}
 
       <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-
         <h2 className="text-xl font-semibold mb-6">
           Deployment Information
         </h2>
 
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-
           {/* Application */}
 
           <div>
-
             <p className="text-sm text-slate-500">
               Application ID
             </p>
@@ -231,14 +188,11 @@ function DeploymentDetails() {
             <p className="mt-1 font-medium">
               {deployment.application_id}
             </p>
-
           </div>
-
 
           {/* Version */}
 
           <div>
-
             <p className="text-sm text-slate-500">
               Version
             </p>
@@ -246,14 +200,11 @@ function DeploymentDetails() {
             <p className="mt-1 font-medium">
               {deployment.version}
             </p>
-
           </div>
-
 
           {/* Status */}
 
           <div>
-
             <p className="text-sm text-slate-500">
               Status
             </p>
@@ -264,49 +215,18 @@ function DeploymentDetails() {
                   ? "inline-block mt-1 px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700"
                   : deployment.status === "failed"
                   ? "inline-block mt-1 px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700"
+                  : deployment.status === "stopped"
+                  ? "inline-block mt-1 px-3 py-1 rounded-full text-sm font-medium bg-slate-100 text-slate-700"
                   : "inline-block mt-1 px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-700"
               }
             >
               {deployment.status}
             </span>
-
           </div>
-          <div className="flex gap-3 mt-6">
-
-  <button
-    onClick={handleStop}
-    disabled={
-      actionLoading ||
-      deployment.status === "stopped"
-    }
-    className="bg-red-600 text-white px-5 py-3 rounded-lg hover:bg-red-700 disabled:opacity-50"
-  >
-    {actionLoading
-      ? "Processing..."
-      : "Stop Deployment"}
-  </button>
-
-
-  <button
-    onClick={handleRestart}
-    disabled={
-      actionLoading ||
-      deployment.status === "success"
-    }
-    className="bg-green-600 text-white px-5 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50"
-  >
-    {actionLoading
-      ? "Processing..."
-      : "Restart Deployment"}
-  </button>
-
-</div>
-
 
           {/* Container */}
 
           <div>
-
             <p className="text-sm text-slate-500">
               Container
             </p>
@@ -315,14 +235,24 @@ function DeploymentDetails() {
               {deployment.container_name ||
                 "Not available"}
             </p>
-
           </div>
 
-
-          {/* Port */}
+          {/* Container ID */}
 
           <div>
+            <p className="text-sm text-slate-500">
+              Container ID
+            </p>
 
+            <p className="mt-1 font-mono text-xs break-all">
+              {deployment.container_id ||
+                "Not available"}
+            </p>
+          </div>
+
+          {/* Host Port */}
+
+          <div>
             <p className="text-sm text-slate-500">
               Host Port
             </p>
@@ -331,14 +261,11 @@ function DeploymentDetails() {
               {deployment.host_port ||
                 "Not available"}
             </p>
-
           </div>
-
 
           {/* Started */}
 
           <div>
-
             <p className="text-sm text-slate-500">
               Started At
             </p>
@@ -350,40 +277,74 @@ function DeploymentDetails() {
                   ).toLocaleString()
                 : "Not available"}
             </p>
-
           </div>
 
+          {/* Completed */}
+
+          <div>
+            <p className="text-sm text-slate-500">
+              Completed At
+            </p>
+
+            <p className="mt-1 font-medium">
+              {deployment.completed_at
+                ? new Date(
+                    deployment.completed_at
+                  ).toLocaleString()
+                : "Not available"}
+            </p>
+          </div>
         </div>
 
-      </div>
+        {/* Stop / Restart Buttons */}
 
+        <div className="flex gap-3 mt-8 border-t pt-6">
+          <button
+            onClick={handleStop}
+            disabled={
+              actionLoading ||
+              deployment.status === "stopped"
+            }
+            className="bg-red-600 text-white px-5 py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {actionLoading
+              ? "Processing..."
+              : "Stop Deployment"}
+          </button>
+
+          <button
+            onClick={handleRestart}
+            disabled={
+              actionLoading ||
+              deployment.status === "success"
+            }
+            className="bg-green-600 text-white px-5 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {actionLoading
+              ? "Processing..."
+              : "Restart Deployment"}
+          </button>
+        </div>
+      </div>
 
       {/* Deployment Logs */}
 
       <div className="bg-slate-900 text-white rounded-xl p-6">
-
         <h2 className="text-lg font-semibold mb-5">
           Deployment Logs
         </h2>
 
-
         {logs.length === 0 ? (
-
           <p className="text-slate-400">
             No deployment logs available.
           </p>
-
         ) : (
-
           <div className="space-y-3">
-
             {logs.map((log) => (
-
               <div
                 key={log.id}
                 className="font-mono text-sm"
               >
-
                 <span className="text-slate-400">
                   {log.timestamp
                     ? new Date(
@@ -395,19 +356,12 @@ function DeploymentDetails() {
                 <span className="ml-4">
                   {log.message}
                 </span>
-
               </div>
-
             ))}
-
           </div>
-
         )}
-
       </div>
-
     </div>
-
   );
 }
 
