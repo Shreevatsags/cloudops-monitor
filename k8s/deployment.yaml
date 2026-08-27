@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: cloudops-app
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: cloudops-app
+
+  template:
+    metadata:
+      labels:
+        app: cloudops-app
+
+    spec:
+      containers:
+        - name: cloudops-app
+
+          image: cloudops-app:2
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8000
+
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://postgres:postgres@postgres-service:5432/cloudops_monitor"
+
+            - name: JWT_SECRET_KEY
+              value: "change-this-secret"
+
+            - name: JWT_ALGORITHM
+              value: "HS256"
+
+            - name: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+              value: "60"
