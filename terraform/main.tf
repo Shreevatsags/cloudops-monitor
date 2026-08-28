@@ -125,3 +125,21 @@ resource "aws_route_table_association" "public_2" {
   subnet_id      = aws_subnet.public_2.id
   route_table_id = aws_route_table.public.id
 }
+
+
+# -------------------------
+# ECR Repository
+# -------------------------
+
+resource "aws_ecr_repository" "cloudops" {
+  name                 = "cloudops-app"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name = "cloudops-app"
+  }
+}
