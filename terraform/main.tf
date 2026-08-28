@@ -69,6 +69,29 @@ resource "aws_subnet" "public_2" {
   }
 }
 
+# -------------------------
+# Private Subnets
+# -------------------------
+
+resource "aws_subnet" "private_1" {
+  vpc_id            = aws_vpc.cloudops.id
+  cidr_block        = "10.0.11.0/24"
+  availability_zone = "us-east-1a"
+
+  tags = {
+    Name = "cloudops-private-1"
+  }
+}
+
+resource "aws_subnet" "private_2" {
+  vpc_id            = aws_vpc.cloudops.id
+  cidr_block        = "10.0.12.0/24"
+  availability_zone = "us-east-1b"
+
+  tags = {
+    Name = "cloudops-private-2"
+  }
+}
 
 # -------------------------
 # Route Table
