@@ -78,3 +78,27 @@ resource "aws_iam_role_policy_attachment" "eks_ecr_policy" {
   role       = aws_iam_role.eks_node_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
+
+# -------------------------
+# EKS Cluster
+# -------------------------
+
+resource "aws_eks_cluster" "cloudops" {
+  name     = "cloudops-eks"
+  role_arn = aws_iam_role.eks_cluster_role.arn
+
+  vpc_config {
+    subnet_ids = [
+      aws_subnet.private_1.id,
+      aws_subnet.private_2.id
+    ]
+  }
+
+  tags = {
+    Name = "cloudops-eks"
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_cluster_policy
+  ]
+}
