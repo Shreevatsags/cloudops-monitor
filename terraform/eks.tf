@@ -102,3 +102,37 @@ resource "aws_eks_cluster" "cloudops" {
     aws_iam_role_policy_attachment.eks_cluster_policy
   ]
 }
+
+# -------------------------
+# EKS Managed Node Group
+# -------------------------
+
+resource "aws_eks_node_group" "cloudops" {
+  cluster_name  = aws_eks_cluster.cloudops.name
+  node_role_arn = aws_iam_role.eks_node_role.arn
+
+  subnet_ids = [
+    aws_subnet.private_1.id,
+    aws_subnet.private_2.id
+  ]
+
+  instance_types = ["t3.small"]
+
+  capacity_type = "ON_DEMAND"
+
+  scaling_config {
+    desired_size = 1
+    min_size     = 1
+    max_size     = 2
+  }
+
+  tags = {
+    Name = "cloudops-eks-node-group"
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_worker_node_policy,
+    aws_iam_role_policy_attachment.eks_cni_policy,
+    aws_iam_role_policy_attachment.eks_ecr_policy
+  ]
+}

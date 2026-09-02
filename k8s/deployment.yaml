@@ -20,9 +20,9 @@ spec:
       containers:
         - name: cloudops-app
 
-          image: cloudops-app:2
+          image: 789288815883.dkr.ecr.us-east-1.amazonaws.com/cloudops-app:2
 
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
 
           ports:
             - containerPort: 8000
