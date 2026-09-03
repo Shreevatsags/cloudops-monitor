@@ -7,11 +7,13 @@ from app.models.deployment import Deployment
 from app.models.deployment_log import DeploymentLog
 from app.models.user import User
 from app.utils.security import get_current_user
-from app.services.docker_service import deploy_docker_container
-from app.services.docker_service import (
-    stop_docker_container,
-    start_docker_container
+
+from app.services.kubernetes_service import (
+    create_application_deployment,
+    delete_application_deployment,
+    restart_application_deployment,
 )
+
 
 router = APIRouter(
     prefix="/deployments",
@@ -38,13 +40,13 @@ def get_deployments(
 
     return deployments
 
+
 @router.get("/{deployment_id}")
 def get_deployment(
     deployment_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
     deployment = (
         db.query(Deployment)
         .join(
@@ -75,6 +77,7 @@ def get_deployment(
         "started_at": deployment.started_at,
         "completed_at": deployment.completed_at
     }
+
 
 @router.get("/{deployment_id}/logs")
 def get_deployment_logs(
@@ -114,6 +117,7 @@ def get_deployment_logs(
 
     return logs
 
+
 @router.post("/{application_id}")
 def create_deployment(
     application_id: int,
@@ -136,11 +140,11 @@ def create_deployment(
             detail="Application not found"
         )
 
-    # 2. Make sure the application has been built
+    # 2. Make sure the application has an image
     if not application.docker_image:
         raise HTTPException(
             status_code=400,
-            detail="Application must be built before deployment"
+            detail="Application must have a Docker image before deployment"
         )
 
     # 3. Create deployment record
@@ -158,55 +162,51 @@ def create_deployment(
     db.add(
         DeploymentLog(
             deployment_id=deployment.id,
-            message="Deployment started"
+            message="Kubernetes deployment started"
         )
     )
 
     db.commit()
 
-    # 5. Generate unique container information
-    container_name = (
+    # 5. Generate Kubernetes deployment name
+    kubernetes_deployment_name = (
         f"cloudops-app-{application.id}-"
         f"deployment-{deployment.id}"
     )
 
-    host_port = 9000 + deployment.id
-
     try:
-
         db.add(
             DeploymentLog(
                 deployment_id=deployment.id,
-                message="Starting Docker container"
+                message="Creating Kubernetes deployment"
             )
         )
 
         db.commit()
 
-        # 6. Start Docker container
-        result = deploy_docker_container(
+        # 6. Create Kubernetes Deployment
+        result = create_application_deployment(
+            deployment_name=kubernetes_deployment_name,
             image_name=application.docker_image,
-            container_name=container_name,
-            host_port=host_port
+            container_port=8000
         )
 
-        container_id = result["container_id"]
-        deployment.container_id = container_id
-        deployment.container_name = container_name
-        deployment.host_port = host_port
+        # Temporarily store Kubernetes deployment name
+        # in the existing container_name database field.
+        deployment.container_name = kubernetes_deployment_name
 
-        # 7. Save deployment logs
+        # Kubernetes does not use the Docker host_port concept.
+        deployment.container_id = None
+        deployment.host_port = None
+
+        # 7. Save deployment log
         db.add(
             DeploymentLog(
                 deployment_id=deployment.id,
-                message=f"Container started: {container_id}"
-            )
-        )
-
-        db.add(
-            DeploymentLog(
-                deployment_id=deployment.id,
-                message=f"Application available on port {host_port}"
+                message=(
+                    f"Kubernetes deployment created: "
+                    f"{result['name']}"
+                )
             )
         )
 
@@ -216,7 +216,7 @@ def create_deployment(
         db.add(
             DeploymentLog(
                 deployment_id=deployment.id,
-                message="Deployment completed successfully"
+                message="Kubernetes deployment completed successfully"
             )
         )
 
@@ -228,9 +228,7 @@ def create_deployment(
             "application_id": deployment.application_id,
             "version": deployment.version,
             "status": deployment.status,
-            "container_id": container_id,
-            "container_name": container_name,
-            "host_port": host_port,
+            "kubernetes_deployment": kubernetes_deployment_name,
             "message": "Deployment completed successfully"
         }
 
@@ -252,13 +250,13 @@ def create_deployment(
             detail=str(error)
         )
 
+
 @router.post("/{deployment_id}/stop")
 def stop_deployment(
     deployment_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
     deployment = (
         db.query(Deployment)
         .join(
@@ -281,16 +279,22 @@ def stop_deployment(
     if not deployment.container_name:
         raise HTTPException(
             status_code=400,
-            detail="Container information not available"
+            detail="Kubernetes deployment information not available"
         )
 
     try:
-
-        result = stop_docker_container(
+        delete_application_deployment(
             deployment.container_name
         )
 
         deployment.status = "stopped"
+
+        db.add(
+            DeploymentLog(
+                deployment_id=deployment.id,
+                message="Kubernetes deployment deleted"
+            )
+        )
 
         db.commit()
         db.refresh(deployment)
@@ -299,7 +303,7 @@ def stop_deployment(
             "message": "Deployment stopped successfully",
             "deployment_id": deployment.id,
             "status": deployment.status,
-            "container_name": deployment.container_name
+            "kubernetes_deployment": deployment.container_name
         }
 
     except Exception as error:
@@ -309,13 +313,13 @@ def stop_deployment(
             detail=str(error)
         )
 
+
 @router.post("/{deployment_id}/restart")
 def restart_deployment(
     deployment_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
     deployment = (
         db.query(Deployment)
         .join(
@@ -338,16 +342,22 @@ def restart_deployment(
     if not deployment.container_name:
         raise HTTPException(
             status_code=400,
-            detail="Container information not available"
+            detail="Kubernetes deployment information not available"
         )
 
     try:
-
-        result = start_docker_container(
+        restart_application_deployment(
             deployment.container_name
         )
 
         deployment.status = "success"
+
+        db.add(
+            DeploymentLog(
+                deployment_id=deployment.id,
+                message="Kubernetes deployment restarted"
+            )
+        )
 
         db.commit()
         db.refresh(deployment)
@@ -356,7 +366,7 @@ def restart_deployment(
             "message": "Deployment restarted successfully",
             "deployment_id": deployment.id,
             "status": deployment.status,
-            "container_name": deployment.container_name
+            "kubernetes_deployment": deployment.container_name
         }
 
     except Exception as error:

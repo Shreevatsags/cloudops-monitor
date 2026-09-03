@@ -17,10 +17,13 @@ spec:
         app: cloudops-app
 
     spec:
+
+      serviceAccountName: cloudops-backend
+      
       containers:
         - name: cloudops-app
 
-          image: 789288815883.dkr.ecr.us-east-1.amazonaws.com/cloudops-app:2
+          image: 789288815883.dkr.ecr.us-east-1.amazonaws.com/cloudops-app:jenkins-4
 
           imagePullPolicy: Always
 
