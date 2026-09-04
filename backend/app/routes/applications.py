@@ -9,8 +9,8 @@ from app.schemas.application import (
     ApplicationResponse
 )
 from app.utils.security import get_current_user
-from app.services.docker_service import build_docker_image
-from app.services.git_service import clone_repository
+from app.services.jenkins_service import trigger_jenkins_build
+
 
 router = APIRouter(
     prefix="/applications",
@@ -105,7 +105,7 @@ def create_application(
 
 
 # ============================================================
-# BUILD DOCKER IMAGE
+# BUILD APPLICATION USING JENKINS
 # ============================================================
 
 @router.post("/{application_id}/build")
@@ -130,34 +130,32 @@ def build_application(
             detail="Application not found"
         )
 
-    repository_path = None
-
-    image_name = f"cloudops-app:{application.id}"
+    if not application.repository_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Application does not have a repository URL"
+        )
 
     try:
 
-        # 1. Clone GitHub repository
-        repository_path = clone_repository(
-            application.repository_url
+        # Trigger Jenkins CI pipeline
+        result = trigger_jenkins_build(
+            application_id=application.id,
+            repository_url=application.repository_url
         )
 
-        # 2. Build Docker image
-        result = build_docker_image(
-            project_path=repository_path,
-            image_name=image_name
-        )
-
-        # 3. Save Docker image name
-        application.docker_image = image_name
-        application.status = "built"
+        # Mark build as in progress
+        application.status = "building"
 
         db.commit()
         db.refresh(application)
 
         return {
-            "message": "Docker image built successfully",
-            "image": image_name,
-            "output": result["output"]
+            "message": "Jenkins build triggered successfully",
+            "application_id": application.id,
+            "repository_url": application.repository_url,
+            "status": application.status,
+            "jenkins": result
         }
 
     except Exception as error:
@@ -170,15 +168,3 @@ def build_application(
             status_code=500,
             detail=str(error)
         )
-
-    finally:
-
-        # 4. Remove temporary repository
-        if repository_path:
-
-            import shutil
-
-            shutil.rmtree(
-                repository_path,
-                ignore_errors=True
-            )
