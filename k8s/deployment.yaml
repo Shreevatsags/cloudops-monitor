@@ -42,3 +42,21 @@ spec:
 
             - name: JWT_ACCESS_TOKEN_EXPIRE_MINUTES
               value: "60"
+
+            - name: JENKINS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-credentials
+                  key: JENKINS_URL
+
+            - name: JENKINS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-credentials
+                  key: JENKINS_USER
+
+            - name: JENKINS_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: jenkins-credentials
+                  key: JENKINS_API_TOKEN

@@ -168,3 +168,51 @@ def build_application(
             status_code=500,
             detail=str(error)
         )
+
+
+# ============================================================
+# JENKINS BUILD CALLBACK
+# ============================================================
+
+@router.post("/{application_id}/build-callback")
+def jenkins_build_callback(
+    application_id: int,
+    docker_image: str,
+    db: Session = Depends(get_db)
+):
+
+    application = (
+        db.query(Application)
+        .filter(
+            Application.id == application_id
+        )
+        .first()
+    )
+
+    if application is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Application not found"
+        )
+
+    if not docker_image:
+        raise HTTPException(
+            status_code=400,
+            detail="Docker image is required"
+        )
+
+    # Store the image produced by Jenkins
+    application.docker_image = docker_image
+
+    # Mark application as successfully built
+    application.status = "built"
+
+    db.commit()
+    db.refresh(application)
+
+    return {
+        "message": "Jenkins build callback received successfully",
+        "application_id": application.id,
+        "docker_image": application.docker_image,
+        "status": application.status
+    }
