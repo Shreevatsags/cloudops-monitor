@@ -20,7 +20,7 @@ def load_kubernetes_config():
 def create_application_deployment(
     deployment_name: str,
     image_name: str,
-    container_port: int = 8000,
+    container_port: int = 5000,
 ):
     load_kubernetes_config()
 
@@ -59,6 +59,12 @@ def create_application_deployment(
                                 client.V1ContainerPort(
                                     container_port=container_port
                                 )
+                            ],
+                            env=[
+                                client.V1EnvVar(name="MYSQL_HOST", value="mysql"),
+                                client.V1EnvVar(name="MYSQL_USER", value="root"),
+                                client.V1EnvVar(name="MYSQL_PASSWORD", value="root"),
+                                client.V1EnvVar(name="MYSQL_DB", value="devops"),
                             ],
                         )
                     ]
