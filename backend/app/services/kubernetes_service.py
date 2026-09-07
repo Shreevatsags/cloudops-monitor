@@ -25,26 +25,29 @@ def create_application_deployment(
     load_kubernetes_config()
 
     apps_v1 = client.AppsV1Api()
+    core_v1 = client.CoreV1Api()
+
+    labels = {
+        "app": deployment_name
+    }
+
+    # ============================================================
+    # KUBERNETES DEPLOYMENT
+    # ============================================================
 
     deployment = client.V1Deployment(
         metadata=client.V1ObjectMeta(
             name=deployment_name,
-            labels={
-                "app": deployment_name
-            },
+            labels=labels,
         ),
         spec=client.V1DeploymentSpec(
             replicas=1,
             selector=client.V1LabelSelector(
-                match_labels={
-                    "app": deployment_name
-                }
+                match_labels=labels
             ),
             template=client.V1PodTemplateSpec(
                 metadata=client.V1ObjectMeta(
-                    labels={
-                        "app": deployment_name
-                    }
+                    labels=labels
                 ),
                 spec=client.V1PodSpec(
                     containers=[
@@ -64,20 +67,65 @@ def create_application_deployment(
         ),
     )
 
+    # ============================================================
+    # KUBERNETES SERVICE
+    # ============================================================
+
+    service_name = f"{deployment_name}-service"
+
+    service = client.V1Service(
+        metadata=client.V1ObjectMeta(
+            name=service_name,
+            labels=labels,
+        ),
+        spec=client.V1ServiceSpec(
+            type="LoadBalancer",
+            selector=labels,
+            ports=[
+                client.V1ServicePort(
+                    port=80,
+                    target_port=container_port,
+                    protocol="TCP",
+                )
+            ],
+        ),
+    )
+
     try:
-        result = apps_v1.create_namespaced_deployment(
+
+        # Create Deployment
+        deployment_result = apps_v1.create_namespaced_deployment(
             namespace="default",
             body=deployment,
         )
 
+        # Create Service
+        service_result = core_v1.create_namespaced_service(
+            namespace="default",
+            body=service,
+        )
+
         return {
-            "name": result.metadata.name,
+            "name": deployment_result.metadata.name,
+            "service_name": service_result.metadata.name,
             "status": "created",
         }
 
     except ApiException as error:
+
+        # If Deployment was created but Service failed,
+        # remove the Deployment so we don't leave partial resources.
+        try:
+            apps_v1.delete_namespaced_deployment(
+                name=deployment_name,
+                namespace="default",
+                body=client.V1DeleteOptions(),
+            )
+        except Exception:
+            pass
+
         raise RuntimeError(
-            f"Failed to create Kubernetes deployment: {error}"
+            f"Failed to create Kubernetes deployment/service: {error}"
         )
 
 
@@ -85,8 +133,25 @@ def delete_application_deployment(deployment_name: str):
     load_kubernetes_config()
 
     apps_v1 = client.AppsV1Api()
+    core_v1 = client.CoreV1Api()
+
+    service_name = f"{deployment_name}-service"
 
     try:
+
+        # Delete Service first
+        try:
+            core_v1.delete_namespaced_service(
+                name=service_name,
+                namespace="default",
+                body=client.V1DeleteOptions(),
+            )
+        except ApiException as service_error:
+            # 404 means the Service is already gone.
+            if service_error.status != 404:
+                raise
+
+        # Delete Deployment
         apps_v1.delete_namespaced_deployment(
             name=deployment_name,
             namespace="default",
@@ -95,12 +160,13 @@ def delete_application_deployment(deployment_name: str):
 
         return {
             "name": deployment_name,
+            "service_name": service_name,
             "status": "deleted",
         }
 
     except ApiException as error:
         raise RuntimeError(
-            f"Failed to delete Kubernetes deployment: {error}"
+            f"Failed to delete Kubernetes deployment/service: {error}"
         )
 
 
@@ -110,6 +176,7 @@ def restart_application_deployment(deployment_name: str):
     apps_v1 = client.AppsV1Api()
 
     try:
+
         deployment = apps_v1.read_namespaced_deployment(
             name=deployment_name,
             namespace="default",
