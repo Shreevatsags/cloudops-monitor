@@ -61,7 +61,7 @@ def create_application_deployment(
                                 )
                             ],
                             env=[
-                                client.V1EnvVar(name="MYSQL_HOST", value="mysql"),
+                                client.V1EnvVar(name="MYSQL_HOST", value="mysql-service"),
                                 client.V1EnvVar(name="MYSQL_USER", value="root"),
                                 client.V1EnvVar(name="MYSQL_PASSWORD", value="root"),
                                 client.V1EnvVar(name="MYSQL_DB", value="devops"),
