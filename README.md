@@ -811,23 +811,6 @@ The AWS infrastructure used during testing was intentionally destroyed after com
 
 The source code, Kubernetes configuration, Terraform configuration, and CI/CD configuration remain available in the GitHub repository.
 
-## Future Improvements
-
-Possible future improvements include:
-
-- Prometheus monitoring
-- Grafana dashboards
-- Centralized logging
-- Kubernetes metrics
-- GitHub webhook-triggered builds
-- Automated unit and integration testing
-- HTTPS/TLS
-- Production-grade secrets management
-- Blue-green deployments
-- Canary deployments
-- Application health checks
-- Advanced alerting
-
 ## Learning Outcomes
 
 This project provides practical experience in building and deploying a complete DevOps platform.
