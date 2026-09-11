@@ -313,7 +313,7 @@ A short walkthrough demonstrating the CloudOps Monitor dashboard, application de
 ### Clone Repository
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone https://github.com/Shreevatsags/cloudops-monitor.git
 cd cloudops-monitor
 ```
 
